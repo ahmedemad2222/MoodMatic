@@ -1,0 +1,64 @@
+import pandas as pd
+import numpy as np
+
+# Load the CSV files
+description_with_emotions_path = '/path'
+movies_reviews_path = '/path'
+
+description_with_emotions_df = pd.read_csv(description_with_emotions_path)
+movies_reviews_df = pd.read_csv(movies_reviews_path)
+
+# Renaming columns for consistency
+description_with_emotions_df.rename(columns={
+    'Rating': 'Rating',
+    'Review': 'Reviews',
+    'Title': 'Movie_Name',
+    'Genre': 'Genres',
+    'Description': 'Description',
+    'emotion': 'Emotion'
+}, inplace=True)
+
+movies_reviews_df.rename(columns={
+    'Ratings': 'Rating',
+    'Reviews': 'Reviews',
+    'movie_name': 'Movie_Name',
+    'genres': 'Genres',
+    'Description': 'Description',
+    'emotion': 'Emotion'
+}, inplace=True)
+
+# Selecting only the necessary columns
+description_with_emotions_df = description_with_emotions_df[['Rating', 'Reviews', 'Movie_Name', 'Genres', 'Description', 'Emotion']]
+movies_reviews_df = movies_reviews_df[['Rating', 'Reviews', 'Movie_Name', 'Genres', 'Description', 'Emotion']]
+
+# Merging the dataframes
+merged_df = pd.concat([description_with_emotions_df, movies_reviews_df], ignore_index=True)
+
+# Add an index column as the first column
+merged_df.index.name = 'Index'
+merged_df.reset_index(inplace=True)
+
+# Handling null values
+# Replace null values in numeric columns with the mean (rounded to one decimal place)
+numeric_columns = merged_df.select_dtypes(include=['number']).columns
+for column in numeric_columns:
+    mean_value = merged_df[column].mean()
+    rounded_mean = round(mean_value, 1)
+    merged_df[column].fillna(rounded_mean, inplace=True)
+
+# Replace null values in string columns with the mode or a default value
+string_columns = merged_df.select_dtypes(include=['object']).columns
+for column in string_columns:
+    mode = merged_df[column].mode()
+    if not mode.empty:
+        merged_df[column].fillna(mode[0], inplace=True)
+    else:
+        # Use a default value if mode doesn't exist
+        default_value = 'Unknown'
+        merged_df[column].fillna(default_value, inplace=True)
+
+# Save the merged dataframe to a new CSV file
+output_file_path = 'Merged_Movies_Emotions.csv'
+merged_df.to_csv(output_file_path, index=False)
+
+print(f'Merged CSV saved to {output_file_path}')
